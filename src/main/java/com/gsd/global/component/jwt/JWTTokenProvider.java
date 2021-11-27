@@ -26,12 +26,15 @@ public class JWTTokenProvider {
 
     private Key secretKey;
 
+    private JwtParser jwtParser;
+
     @PostConstruct
     void init() {
         this.secretKey  = Keys.hmacShaKeyFor(secretKeyValue.getBytes());
+        this.jwtParser = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build();
     }
-
-
 
 
     /**
@@ -40,8 +43,7 @@ public class JWTTokenProvider {
      * @return 토큰에 담겨있는 Claims 데이터
      */
     public ClaimDTO get(String token) {
-        Claims body = Jwts.parser()
-                .setSigningKey(secretKey)
+        Claims body = jwtParser
                 .parseClaimsJws(token)
                 .getBody();
 
@@ -57,9 +59,7 @@ public class JWTTokenProvider {
       */
     public boolean validToken(String token) {
         try{
-            JwtParser parser = Jwts.parser()
-                    .setSigningKey(secretKey);
-            parser.parseClaimsJws(token);
+            jwtParser.parseClaimsJws(token);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
@@ -105,7 +105,7 @@ public class JWTTokenProvider {
         return Jwts.builder()
                 .setClaims(claims) //토큰에 담을 정보.
                 .setIssuedAt(new Date()) //토큰 발행시간.
-                .signWith(SignatureAlgorithm.HS256, secretKey) //해싱값.
+                .signWith(secretKey, SignatureAlgorithm.HS256) //해싱값.
                 .compact();
     }
 
